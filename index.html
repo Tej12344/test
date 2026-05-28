@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snowflake Cortex: Search vs Analyst vs Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a1a;
+    --ink-muted: #555;
+    --ink-faint: #888;
+    --surface: #fff;
+    --surface-soft: #f7f6f2;
+    --surface-code: #f0efe9;
+    --border: #e0ddd5;
+    --accent-blue: #1d5fa8;
+    --accent-blue-light: #e8f0fb;
+    --accent-teal: #0a6e56;
+    --accent-teal-light: #e1f5ee;
+    --accent-amber: #8a5100;
+    --accent-amber-light: #fdf0d8;
+    --accent-coral: #a63020;
+    --accent-coral-light: #faece7;
+    --accent-purple: #4a3aaa;
+    --accent-purple-light: #eeedfe;
+    --tag-bg: #eeedfe;
+    --tag-text: #3c348a;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    line-height: 1.75;
+    font-size: 17px;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  /* ── HEADER ── */
+  .pub-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 42px;
+    font-weight: 600;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    color: var(--ink-muted);
+    font-weight: 300;
+    line-height: 1.5;
+    margin-bottom: 32px;
+  }
+
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a3aaa, #1d5fa8);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600; font-size: 15px; flex-shrink: 0;
+  }
+  .byline-meta { font-size: 13.5px; }
+  .byline-name { font-weight: 500; color: var(--ink); }
+  .byline-detail { color: var(--ink-faint); }
+  .byline-tags { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; }
+  .tag {
+    font-size: 11px;
+    background: var(--surface-soft);
+    color: var(--ink-muted);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── COVER IMAGE PLACEHOLDER ── */
+  .cover {
+    width: 100%;
+    background: linear-gradient(135deg, #0f1e3a 0%, #1b3a6b 50%, #0a3d55 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 32px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(29,95,168,0.4) 0%, transparent 60%),
+                radial-gradient(circle at 75% 40%, rgba(10,110,86,0.35) 0%, transparent 55%);
+  }
+  .cover-inner { position: relative; z-index: 1; text-align: center; }
+  .cover h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 16px;
+  }
+  .cover-icons { display: flex; gap: 24px; align-items: center; justify-content: center; }
+  .cover-icon {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 20px 28px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+  .cover-icon .icon-emoji { font-size: 28px; display: block; margin-bottom: 8px; }
+  .cover-icon .icon-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); }
+  .cover-icon .icon-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; }
+  .cover-vs {
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ── TYPOGRAPHY ── */
+  h2 {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 56px 0 20px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 36px 0 12px;
+    color: var(--ink);
+  }
+  p { margin-bottom: 20px; }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--accent-blue); text-decoration: underline; text-decoration-color: rgba(29,95,168,0.35); }
+  a:hover { text-decoration-color: var(--accent-blue); }
+
+  strong { font-weight: 600; }
+  em { font-family: 'Lora', serif; font-style: italic; }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 28px 0;
+    font-size: 16px;
+  }
+  .callout-tldr {
+    background: var(--surface-soft);
+    border-left: 3px solid var(--ink);
+  }
+  .callout-tldr strong { display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; color: var(--ink-faint); }
+  .callout-tldr ul { list-style: none; padding: 0; }
+  .callout-tldr li { padding: 4px 0; padding-left: 20px; position: relative; }
+  .callout-tldr li::before { content: '→'; position: absolute; left: 0; color: var(--ink-faint); }
+
+  .callout-rule {
+    background: var(--accent-purple-light);
+    border-left: 3px solid var(--accent-purple);
+    color: var(--accent-purple);
+  }
+  .callout-rule .rule-head { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; opacity: 0.7; }
+  .callout-rule p { color: var(--ink); margin: 0; }
+
+  /* ── HERO CARDS (three feature boxes) ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 32px 0;
+  }
+  .feature-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .fc-blue::before  { background: #1d5fa8; }
+  .fc-teal::before  { background: #0a6e56; }
+  .fc-amber::before { background: #c07b10; }
+
+  .feature-card .fc-icon { font-size: 24px; margin-bottom: 12px; }
+  .feature-card .fc-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .feature-card .fc-subtitle { font-size: 12px; color: var(--ink-faint); margin-bottom: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+  .feature-card .fc-desc { font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; }
+  .feature-card .fc-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 12px;
+  }
+  .fc-blue .fc-badge  { background: var(--accent-blue-light); color: var(--accent-blue); }
+  .fc-teal .fc-badge  { background: var(--accent-teal-light); color: var(--accent-teal); }
+  .fc-amber .fc-badge { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-wrap { overflow-x: auto; margin: 28px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  thead tr { border-bottom: 2px solid var(--ink); }
+  thead th { padding: 12px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-muted); text-align: left; }
+  thead th:first-child { color: var(--ink); }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 13px 14px; vertical-align: top; }
+  tbody td:first-child { font-weight: 500; color: var(--ink); }
+  tbody tr:hover { background: var(--surface-soft); }
+  .pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .pill-blue  { background: var(--accent-blue-light); color: var(--accent-blue); }
+  .pill-teal  { background: var(--accent-teal-light); color: var(--accent-teal); }
+  .pill-amber { background: var(--accent-amber-light); color: var(--accent-amber); }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    background: #1a1e2e;
+    color: #abb2bf;
+    border-radius: 10px;
+    padding: 24px 28px;
+    overflow-x: auto;
+    font-family: 'DM Mono', 'Fira Code', monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    margin: 24px 0;
+  }
+  .kw  { color: #c678dd; }
+  .fn  { color: #61afef; }
+  .str { color: #98c379; }
+  .cm  { color: #7f848e; font-style: italic; }
+  .num { color: #d19a66; }
+  .var { color: #e06c75; }
+
+  /* ── SCENARIO CARDS ── */
+  .scenario {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 28px 0;
+  }
+  .scenario-header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .scenario-header.blue  { background: var(--accent-blue-light); }
+  .scenario-header.teal  { background: var(--accent-teal-light); }
+  .scenario-header.amber { background: var(--accent-amber-light); }
+  .scenario-header.multi { background: var(--accent-purple-light); }
+  .scenario-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .blue  .scenario-num { background: var(--accent-blue); color: #fff; }
+  .teal  .scenario-num { background: var(--accent-teal); color: #fff; }
+  .amber .scenario-num { background: #c07b10; color: #fff; }
+  .multi .scenario-num { background: var(--accent-purple); color: #fff; }
+  .scenario-header h3 { margin: 0; font-size: 15px; }
+  .blue  .scenario-header h3 { color: var(--accent-blue); }
+  .teal  .scenario-header h3 { color: var(--accent-teal); }
+  .amber .scenario-header h3 { color: var(--accent-amber); }
+  .multi .scenario-header h3 { color: var(--accent-purple); }
+  .scenario-body { padding: 20px 24px; }
+  .scenario-body p { font-size: 15.5px; }
+  .scenario-body .q {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    color: var(--ink-muted);
+    font-size: 16px;
+    padding: 12px 18px;
+    border-left: 2px solid var(--border);
+    margin: 16px 0;
+    line-height: 1.5;
+  }
+  .why-not {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--surface-soft);
+    border-radius: 8px;
+    padding: 13px 16px;
+    font-size: 14px;
+    margin-top: 16px;
+    color: var(--ink-muted);
+  }
+  .why-not .wn-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── ARCHITECTURE DIAGRAM CONTAINER ── */
+  .diagram-wrap {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .diagram-caption {
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 12px;
+    font-style: italic;
+  }
+
+  /* ── DECISION FRAMEWORK ── */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .decision-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface-soft);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14.5px;
+  }
+  .di-arrow {
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .di-arrow.blue  { color: var(--accent-blue); }
+  .di-arrow.teal  { color: var(--accent-teal); }
+  .di-arrow.amber { color: var(--accent-amber); }
+  .di-arrow.purple{ color: var(--accent-purple); }
+  .di-text { line-height: 1.45; }
+  .di-text strong { display: block; font-size: 13px; color: var(--ink-muted); font-weight: 400; margin-top: 2px; }
+
+  /* ── MISTAKES ── */
+  .mistake-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .mistake-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fff5f5;
+    border: 1px solid #fdd;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14.5px;
+  }
+  .mistake-list .x { font-size: 16px; flex-shrink: 0; color: #cc3333; margin-top: 1px; }
+  .mistake-list strong { font-weight: 600; }
+
+  /* ── FOOTER ── */
+  .article-footer {
+    margin-top: 72px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .footer-tag {
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .footer-tag:hover { background: var(--surface-soft); }
+
+  .clap-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+  .clap-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    background: none;
+    color: var(--ink-muted);
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .clap-btn:hover { background: var(--surface-soft); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 20px;
+    letter-spacing: 8px;
+    margin: 48px 0;
+  }
+
+  /* ── PULL QUOTE ── */
+  .pull-quote {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    font-style: italic;
+    line-height: 1.45;
+    color: var(--ink);
+    border-left: 3px solid var(--ink);
+    padding: 8px 0 8px 24px;
+    margin: 40px 0;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 30px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .decision-grid { grid-template-columns: 1fr; }
+    .cover-icons { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pub-tag">Snowflake · Data Engineering · AI</div>
+
+<h1>Snowflake Cortex Search vs Cortex Analyst vs Cortex Code: The Complete Guide</h1>
+<p class="subtitle">Three powerful AI capabilities, one platform — but they solve completely different problems. Here's how to pick the right one (and when to use all three together).</p>
+
+<div class="byline">
+  <div class="avatar">YN</div>
+  <div class="byline-meta">
+    <div class="byline-name">Your Name</div>
+    <div class="byline-detail">8 min read · May 2026 · Snowflake Builders Blog</div>
+  </div>
+  <div class="byline-tags">
+    <span class="tag">Snowflake</span>
+    <span class="tag">AI</span>
+  </div>
+</div>
+
+<!-- COVER VISUAL -->
+<div class="cover">
+  <div class="cover-inner">
+    <h2>Snowflake Cortex Family</h2>
+    <div class="cover-icons">
+      <div class="cover-icon">
+        <span class="icon-emoji">🔍</span>
+        <div class="icon-label">Cortex Search</div>
+        <div class="icon-sub">Unstructured data</div>
+      </div>
+      <div class="cover-vs">vs</div>
+      <div class="cover-icon">
+        <span class="icon-emoji">📊</span>
+        <div class="icon-label">Cortex Analyst</div>
+        <div class="icon-sub">Structured data</div>
+      </div>
+      <div class="cover-vs">vs</div>
+      <div class="cover-icon">
+        <span class="icon-emoji">⚙️</span>
+        <div class="icon-label">Cortex Code</div>
+        <div class="icon-sub">Build & automate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TL;DR -->
+<div class="callout callout-tldr">
+  <strong>TL;DR</strong>
+  <ul>
+    <li>Use <strong>Cortex Search</strong> when your data is unstructured — documents, tickets, reviews, transcripts</li>
+    <li>Use <strong>Cortex Analyst</strong> when your data is structured — tables, metrics, dashboards, SQL</li>
+    <li>Use <strong>Cortex Code</strong> when you want to build or automate — pipelines, dbt, SQL generation</li>
+    <li>Use <strong>Cortex Agents</strong> when you need all three working together in a workflow</li>
+  </ul>
+</div>
+
+<p>Snowflake has shipped a lot under the "Cortex" banner. If you've been confused about when to use <em>Cortex Search</em> versus <em>Cortex Analyst</em> versus <em>Cortex Code</em> — you're not alone. The names are similar. They all involve natural language. They all live inside Snowflake. But they are solving fundamentally different problems.</p>
+
+<p>This guide breaks it down clearly: what each does, where each shines, real examples with code, and a decision framework you can actually use.</p>
+
+<div class="divider">· · ·</div>
+
+<h2>The Core Idea: Three Layers of Intelligence</h2>
+
+<p>Think of the Cortex suite as three distinct layers inside your Snowflake environment:</p>
+
+<div class="feature-grid">
+  <div class="feature-card fc-blue">
+    <div class="fc-icon">🔍</div>
+    <div class="fc-subtitle">Layer 1</div>
+    <div class="fc-title">Cortex Search</div>
+    <div class="fc-desc">Retrieves answers from <strong>unstructured text</strong> using semantic embeddings and keyword ranking. Think RAG without the plumbing.</div>
+    <span class="fc-badge">Unstructured → Retrieval</span>
+  </div>
+  <div class="feature-card fc-teal">
+    <div class="fc-icon">📊</div>
+    <div class="fc-subtitle">Layer 2</div>
+    <div class="fc-title">Cortex Analyst</div>
+    <div class="fc-desc">Translates <strong>natural language into SQL</strong> on structured tables and semantic models. Powered by an LLM that understands your schema.</div>
+    <span class="fc-badge">Structured → Analytics</span>
+  </div>
+  <div class="feature-card fc-amber">
+    <div class="fc-icon">⚙️</div>
+    <div class="fc-subtitle">Layer 3</div>
+    <div class="fc-title">Cortex Code</div>
+    <div class="fc-desc">An AI coding agent that <strong>builds your data infrastructure</strong> — dbt models, Airflow DAGs, Streamlit apps, Snowflake admin — from plain English.</div>
+    <span class="fc-badge">Instructions → Code</span>
+  </div>
+</div>
+
+<div class="callout callout-rule">
+  <div class="rule-head">The Golden Rule</div>
+  <p>The key decision is <strong>not the tool</strong> — it's the <strong>data type + what you're trying to do with it</strong>. Is your data in tables or in documents? Do you want to query it, retrieve from it, or build something on it?</p>
+</div>
+
+<div class="divider">· · ·</div>
+
+<h2>Cortex Search — AI Over Unstructured Data</h2>
+
+<p>Cortex Search is Snowflake's managed RAG (Retrieval Augmented Generation) service. You point it at text columns — customer reviews, support tickets, call transcripts, legal documents, knowledge base articles — and it creates a search index using vector embeddings + keyword matching. Your users can then query it in plain English and get the most relevant passages back.</p>
+
+<h3>How it works under the hood</h3>
+
+<!-- DIAGRAM 1: Cortex Search Architecture -->
+<div class="diagram-wrap">
+<svg width="100%" viewBox="0 0 700 280" role="img">
+  <title>Cortex Search architecture: text data flows through chunking and embedding into a search index, which is queried by natural language</title>
+  <desc>Architecture diagram showing how Cortex Search indexes unstructured data and retrieves relevant chunks via embedding-based similarity search</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- Row 1: source data boxes -->
+  <g>
+    <rect x="20" y="30" width="110" height="50" rx="8" fill="#e1f5ee" stroke="#0a6e56" stroke-width="0.8"/>
+    <text x="75" y="51" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#0a6e56">Support Tickets</text>
+    <text x="75" y="67" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#0a6e56">TEXT column</text>
+  </g>
+  <g>
+    <rect x="148" y="30" width="110" height="50" rx="8" fill="#e1f5ee" stroke="#0a6e56" stroke-width="0.8"/>
+    <text x="203" y="51" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#0a6e56">PDF Documents</text>
+    <text x="203" y="67" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#0a6e56">extracted text</text>
+  </g>
+  <g>
+    <rect x="276" y="30" width="110" height="50" rx="8" fill="#e1f5ee" stroke="#0a6e56" stroke-width="0.8"/>
+    <text x="331" y="51" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#0a6e56">Call Transcripts</text>
+    <text x="331" y="67" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#0a6e56">VARIANT / TEXT</text>
+  </g>
+
+  <!-- Arrow down to indexing -->
+  <line x1="350" y1="82" x2="350" y2="118" stroke="#888" stroke-width="1" marker-end="url(#arr)"/>
+  <text x="365" y="104" font-family="DM Sans,sans-serif" font-size="11" fill="#888">CREATE CORTEX SEARCH SERVICE</text>
+
+  <!-- Indexing box -->
+  <rect x="80" y="120" width="540" height="56" rx="10" fill="#f7f6f2" stroke="#c8c4ba" stroke-width="0.8"/>
+  <text x="350" y="145" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="600" fill="#333">Cortex Search Engine</text>
+  <text x="350" y="163" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#777">Automatic chunking  ·  Vector embedding  ·  BM25 keyword index  ·  Hybrid ranking</text>
+
+  <!-- Arrow down to query -->
+  <line x1="350" y1="178" x2="350" y2="210" stroke="#888" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- User query box -->
+  <rect x="110" y="212" width="220" height="44" rx="8" fill="#1d5fa8" stroke="none"/>
+  <text x="220" y="233" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="500" fill="#fff">"Find issues similar to</text>
+  <text x="220" y="249" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="500" fill="#fff">payment failed but charged"</text>
+
+  <!-- Arrow right to result -->
+  <line x1="332" y1="234" x2="378" y2="234" stroke="#888" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Result box -->
+  <rect x="380" y="212" width="220" height="44" rx="8" fill="#e1f5ee" stroke="#0a6e56" stroke-width="0.8"/>
+  <text x="490" y="233" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="500" fill="#0a6e56">Top-k relevant passages</text>
+  <text x="490" y="249" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#0a6e56">ranked by similarity score</text>
+</svg>
+<p class="diagram-caption">Figure 1 — Cortex Search indexes your text data automatically, then retrieves the most relevant chunks for any natural language query</p>
+</div>
+
+<h3>Setting it up (it's just SQL)</h3>
+
+<pre><span class="cm">-- Step 1: Create the search service on your text column</span>
+<span class="kw">CREATE OR REPLACE</span> CORTEX SEARCH SERVICE support_search
+  ON ticket_text
+  ATTRIBUTES category, priority
+  WAREHOUSE = my_wh
+  TARGET_LAG = <span class="str">'1 hour'</span>
+  <span class="kw">AS</span> <span class="kw">SELECT</span>
+      ticket_id,
+      ticket_text,
+      category,
+      priority
+  <span class="kw">FROM</span> support_tickets;
+
+<span class="cm">-- Step 2: Query it in Python (REST / Snowpark)</span>
+response = root.databases[<span class="str">'mydb'</span>] \
+    .schemas[<span class="str">'public'</span>] \
+    .cortex_search_services[<span class="str">'support_search'</span>] \
+    .<span class="fn">search</span>(
+        query=<span class="str">"payment failed but charged"</span>,
+        columns=[<span class="str">"ticket_text"</span>, <span class="str">"category"</span>],
+        limit=<span class="num">5</span>
+    )</pre>
+
+<h3>When to use Cortex Search</h3>
+<div class="decision-grid">
+  <div class="decision-item">
+    <div class="di-arrow teal">✓</div>
+    <div class="di-text">Customer support chatbot over ticket history<strong>Classic RAG use case</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow teal">✓</div>
+    <div class="di-text">Document search over contracts, policies, or manuals<strong>Semantic + keyword hybrid</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow teal">✓</div>
+    <div class="di-text">Finding similar call transcripts or reviews<strong>Fuzzy / semantic similarity</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow teal">✓</div>
+    <div class="di-text">Knowledge base Q&amp;A for internal teams<strong>No SQL required from users</strong></div>
+  </div>
+</div>
+
+<div class="divider">· · ·</div>
+
+<h2>Cortex Analyst — Natural Language to SQL</h2>
+
+<p>Cortex Analyst is for your <em>structured</em> data. It's an LLM-powered layer that sits on top of your Snowflake tables and semantic models, letting business users ask questions like "Which customers had the highest revenue last quarter?" — and getting back accurate, auditable SQL results.</p>
+
+<p>The key ingredient is the <strong>Semantic Model</strong> — a YAML file you define once that maps your business terminology to your actual schema. "Revenue" maps to <code>SUM(order_value)</code>. "Active users" maps to a specific filter. This is what makes Cortex Analyst <em>accurate</em>, not just fluent.</p>
+
+<h3>The Semantic Model (the secret sauce)</h3>
+
+<pre><span class="cm"># semantic_model.yaml</span>
+<span class="var">name</span>: sales_model
+<span class="var">tables</span>:
+  - <span class="var">name</span>: orders
+    <span class="var">description</span>: <span class="str">"All customer orders"</span>
+    <span class="var">base_table</span>:
+      <span class="var">database</span>: prod
+      <span class="var">schema</span>: public
+      <span class="var">table</span>: orders
+
+    <span class="var">measures</span>:
+      - <span class="var">name</span>: total_revenue
+        <span class="var">description</span>: <span class="str">"Sum of order values"</span>
+        <span class="var">expr</span>: SUM(order_value)
+        <span class="var">data_type</span>: number
+
+    <span class="var">dimensions</span>:
+      - <span class="var">name</span>: customer_segment
+        <span class="var">description</span>: <span class="str">"Customer tier: enterprise, mid-market, smb"</span>
+        <span class="var">expr</span>: customer_segment
+
+<span class="var">verified_queries</span>:
+  - <span class="var">name</span>: top_customers_by_revenue
+    <span class="var">question</span>: <span class="str">"Which customers had the highest revenue last quarter?"</span>
+    <span class="var">sql</span>: <span class="str">|
+      SELECT customer_name, SUM(order_value) as revenue
+      FROM orders
+      WHERE DATE_TRUNC('quarter', order_date) = DATE_TRUNC('quarter', DATEADD('quarter',-1,CURRENT_DATE()))
+      GROUP BY 1 ORDER BY 2 DESC LIMIT 10</span></pre>
+
+<!-- DIAGRAM 2: Cortex Analyst flow -->
+<div class="diagram-wrap">
+<svg width="100%" viewBox="0 0 700 220" role="img">
+  <title>Cortex Analyst flow: natural language question passes through semantic model to produce SQL and results</title>
+  <desc>A linear flow diagram showing a natural language question going through a semantic model to generate SQL, then producing structured results</desc>
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- Box 1: Question -->
+  <rect x="20" y="80" width="150" height="60" rx="10" fill="#e8f0fb" stroke="#1d5fa8" stroke-width="0.8"/>
+  <text x="95" y="104" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#1d5fa8">"Which customers</text>
+  <text x="95" y="120" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#1d5fa8">dropped last month?"</text>
+  <text x="95" y="136" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#4a7ac0">Natural language</text>
+
+  <!-- Arrow 1 -->
+  <line x1="172" y1="110" x2="208" y2="110" stroke="#aaa" stroke-width="1" marker-end="url(#arr2)"/>
+
+  <!-- Box 2: Semantic Model -->
+  <rect x="210" y="60" width="150" height="100" rx="10" fill="#f7f6f2" stroke="#c8c4ba" stroke-width="0.8"/>
+  <text x="285" y="102" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#333">Semantic Model</text>
+  <text x="285" y="118" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#777">Maps business terms</text>
+  <text x="285" y="132" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#777">to schema + metrics</text>
+  <text x="285" y="148" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#777">+ LLM reasoning</text>
+
+  <!-- Arrow 2 -->
+  <line x1="362" y1="110" x2="398" y2="110" stroke="#aaa" stroke-width="1" marker-end="url(#arr2)"/>
+
+  <!-- Box 3: SQL -->
+  <rect x="400" y="70" width="150" height="80" rx="10" fill="#fdf0d8" stroke="#c07b10" stroke-width="0.8"/>
+  <text x="475" y="100" text-anchor="middle" font-family="DM Mono,monospace" font-size="11" fill="#8a5100">SELECT customer,</text>
+  <text x="475" y="116" text-anchor="middle" font-family="DM Mono,monospace" font-size="11" fill="#8a5100">SUM(churn_risk)</text>
+  <text x="475" y="132" text-anchor="middle" font-family="DM Mono,monospace" font-size="11" fill="#8a5100">FROM orders ...</text>
+
+  <!-- Arrow 3 -->
+  <line x1="552" y1="110" x2="588" y2="110" stroke="#aaa" stroke-width="1" marker-end="url(#arr2)"/>
+
+  <!-- Box 4: Results -->
+  <rect x="590" y="80" width="90" height="60" rx="10" fill="#e1f5ee" stroke="#0a6e56" stroke-width="0.8"/>
+  <text x="635" y="107" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#0a6e56">Results</text>
+  <text x="635" y="123" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#0a6e56">+ SQL shown</text>
+
+  <!-- Labels below -->
+  <text x="95"  y="175" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#aaa">User</text>
+  <text x="285" y="175" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#aaa">Cortex Analyst</text>
+  <text x="475" y="175" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#aaa">Generated SQL</text>
+  <text x="635" y="175" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#aaa">Output</text>
+</svg>
+<p class="diagram-caption">Figure 2 — Cortex Analyst translates a business question through a semantic model into executable SQL, then returns results alongside the query for auditability</p>
+</div>
+
+<div class="callout callout-rule">
+  <div class="rule-head">Why auditability matters</div>
+  <p>In regulated industries, you can't hand an executive an AI-generated number without showing your work. Cortex Analyst surfaces the SQL behind every answer — the business user sees the result <em>and</em> the query that produced it. That's trust.</p>
+</div>
+
+<div class="divider">· · ·</div>
+
+<h2>Cortex Code — The AI Builder</h2>
+
+<p>Cortex Code is different from Search and Analyst. While those tools <em>query</em> your data, Cortex Code <em>builds</em> your data infrastructure. It's an AI coding agent that operates in Snowsight and as a CLI, and can generate production-ready SQL, Python, dbt models, Airflow DAGs, and Streamlit apps from plain English descriptions.</p>
+
+<p>Think of it as having a senior data engineer pair-programming with you — one who knows your Snowflake schema, understands your semantic models, and can write diffs for your review before committing anything.</p>
+
+<h3>What Cortex Code can build</h3>
+
+<div class="decision-grid">
+  <div class="decision-item">
+    <div class="di-arrow amber">⚙</div>
+    <div class="di-text">SQL transformations &amp; CTEs<strong>"Create a churn risk score table joining orders, sessions, and support"</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow amber">⚙</div>
+    <div class="di-text">dbt models &amp; tests<strong>"Create a dbt model for monthly active users with a not-null test"</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow amber">⚙</div>
+    <div class="di-text">Cortex Agents with routing logic<strong>"Build an agent that uses Analyst for metrics and Search for transcripts"</strong></div>
+  </div>
+  <div class="decision-item">
+    <div class="di-arrow amber">⚙</div>
+    <div class="di-text">Streamlit dashboards<strong>"Build a churn dashboard with filters by region and segment"</strong></div>
+  </div>
+</div>
+
+<pre><span class="cm">-- Cortex Code prompt → generated code (example output)</span>
+<span class="cm">-- Prompt: "Create a table of customers at churn risk,</span>
+<span class="cm">--          defined as no orders in 60 days + >2 support tickets"</span>
+
+<span class="kw">CREATE OR REPLACE TABLE</span> churn_risk_customers <span class="kw">AS</span>
+<span class="kw">WITH</span> last_orders <span class="kw">AS</span> (
+    <span class="kw">SELECT</span>
+        customer_id,
+        <span class="fn">MAX</span>(order_date) <span class="kw">AS</span> last_order_date,
+        <span class="fn">DATEDIFF</span>(<span class="str">'day'</span>, <span class="fn">MAX</span>(order_date), <span class="fn">CURRENT_DATE</span>()) <span class="kw">AS</span> days_since_order
+    <span class="kw">FROM</span> orders
+    <span class="kw">GROUP BY</span> <span class="num">1</span>
+),
+ticket_counts <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> customer_id, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> ticket_count
+    <span class="kw">FROM</span> support_tickets
+    <span class="kw">WHERE</span> created_at >= <span class="fn">DATEADD</span>(<span class="str">'day'</span>, -<span class="num">90</span>, <span class="fn">CURRENT_DATE</span>())
+    <span class="kw">GROUP BY</span> <span class="num">1</span>
+)
+<span class="kw">SELECT</span>
+    lo.customer_id,
+    lo.last_order_date,
+    lo.days_since_order,
+    tc.ticket_count,
+    <span class="str">'HIGH'</span> <span class="kw">AS</span> churn_risk_level
+<span class="kw">FROM</span> last_orders lo
+<span class="kw">JOIN</span> ticket_counts tc <span class="kw">USING</span> (customer_id)
+<span class="kw">WHERE</span> lo.days_since_order > <span class="num">60</span>
+  <span class="kw">AND</span> tc.ticket_count > <span class="num">2</span>;</pre>
+
+<div class="divider">· · ·</div>
+
+<h2>Side-by-Side Comparison</h2>
+
+<div class="compare-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th><span class="pill pill-blue">Cortex Search</span></th>
+      <th><span class="pill pill-teal">Cortex Analyst</span></th>
+      <th><span class="pill pill-amber">Cortex Code</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data type</td>
+      <td>Unstructured text</td>
+      <td>Structured tables</td>
+      <td>Any (builds on top)</td>
+    </tr>
+    <tr>
+      <td>What it does</td>
+      <td>Retrieves relevant passages</td>
+      <td>Generates & runs SQL</td>
+      <td>Writes production code</td>
+    </tr>
+    <tr>
+      <td>User-facing?</td>
+      <td>Yes — chatbots, search UIs</td>
+      <td>Yes — self-service analytics</td>
+      <td>Primarily developer-facing</td>
+    </tr>
+    <tr>
+      <td>Output</td>
+      <td>Top-k text chunks + score</td>
+      <td>SQL query + result table</td>
+      <td>SQL / Python / YAML / DAGs</td>
+    </tr>
+    <tr>
+      <td>Setup required</td>
+      <td>CREATE CORTEX SEARCH SERVICE</td>
+      <td>Semantic model YAML</td>
+      <td>Context / project config</td>
+    </tr>
+    <tr>
+      <td>Typical use case</td>
+      <td>Doc search, support bots, RAG</td>
+      <td>BI questions, dashboards</td>
+      <td>Pipeline & app development</td>
+    </tr>
+    <tr>
+      <td>Auditability</td>
+      <td>Source passage shown</td>
+      <td>SQL query shown</td>
+      <td>Full code diff reviewed</td>
+    </tr>
+    <tr>
+      <td>Works with Agents?</td>
+      <td>Yes — retrieval tool</td>
+      <td>Yes — analytics tool</td>
+      <td>Can build agents</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="divider">· · ·</div>
+
+<h2>Real-World Scenarios</h2>
+
+<div class="scenario blue">
+  <div class="scenario-header blue">
+    <div class="scenario-num">1</div>
+    <h3>Support team wants to find similar tickets — Use Cortex Search</h3>
+  </div>
+  <div class="scenario-body">
+    <p>Your support team gets a new ticket: "customer was charged twice after the app crashed." They want to find all previous tickets that sound similar.</p>
+    <div class="q">"Find all tickets similar to 'double charge after crash' from the last 90 days"</div>
+    <p>Cortex Search uses vector embeddings to find semantically similar tickets — even ones that don't use the words "double charge" or "crash." It ranks by similarity and returns the top results with their original text.</p>
+    <div class="why-not">
+      <div class="wn-icon">💡</div>
+      <div><strong>Why not Cortex Analyst?</strong> Because you're not asking for a count or an aggregate — you're asking for relevant text. There's no SQL that finds "semantically similar" support tickets without a vector index.</div>
+    </div>
+  </div>
+</div>
+
+<div class="scenario teal">
+  <div class="scenario-header teal">
+    <div class="scenario-num">2</div>
+    <h3>VP of Sales asks "why did revenue drop last month?" — Use Cortex Analyst</h3>
+  </div>
+  <div class="scenario-body">
+    <p>This is a structured data problem. Revenue lives in an orders table. A drop has a measurable cause — fewer orders, lower average order value, a specific customer segment declining.</p>
+    <div class="q">"Show me revenue by segment this month vs last month, and flag any that dropped more than 10%"</div>
+    <p>Cortex Analyst translates this into SQL, runs it against your orders table, and shows the VP the result alongside the exact query — so they can verify it's right. Crucially, it also shows the SQL, which the analyst can tweak.</p>
+    <div class="why-not">
+      <div class="wn-icon">💡</div>
+      <div><strong>Why not Cortex Search?</strong> Revenue is a number in a table, not a concept in a document. There's nothing to retrieve — you need aggregation, GROUP BY, and comparison logic. That's SQL territory.</div>
+    </div>
+  </div>
+</div>
+
+<div class="scenario amber">
+  <div class="scenario-header amber">
+    <div class="scenario-num">3</div>
+    <h3>Data engineer wants to build a churn model pipeline — Use Cortex Code</h3>
+  </div>
+  <div class="scenario-body">
+    <p>You want a repeatable dbt pipeline that calculates a churn risk score for every customer daily, integrating orders, support ticket history, and product usage.</p>
+    <div class="q">"Build a dbt model called customer_churn_risk that joins orders, support_tickets, and product_events. Score 0-100 based on recency, ticket volume, and session frequency."</div>
+    <p>Cortex Code doesn't just write one SQL query — it scaffolds the entire dbt model with the right folder structure, ref() calls, tests, and documentation. It shows you a diff before applying anything.</p>
+    <div class="why-not">
+      <div class="wn-icon">💡</div>
+      <div><strong>Why not Cortex Analyst?</strong> Analyst is for <em>querying</em> existing data. You want to <em>build</em> new infrastructure — a dbt model that runs daily and writes to a table. That's Cortex Code.</div>
+    </div>
+  </div>
+</div>
+
+<div class="scenario multi">
+  <div class="scenario-header multi">
+    <div class="scenario-num">4</div>
+    <h3>Customer success manager wants a full picture — Use all three via Cortex Agent</h3>
+  </div>
+  <div class="scenario-body">
+    <p>The manager wants to know: "Give me a full account briefing for Acme Corp before my renewal call — revenue trend, recent support issues, and any contract terms I should know."</p>
+    <div class="q">"Account briefing for Acme Corp: revenue trend last 6 months, their top 3 support themes, and any renewal clauses from their contract"</div>
+    <p>This is a multi-step workflow. A Cortex Agent orchestrates it: Cortex Analyst handles the revenue query, Cortex Search retrieves support ticket themes and contract clauses, and the agent synthesizes everything into a briefing. None of these three can do it alone.</p>
+    <div class="why-not">
+      <div class="wn-icon">💡</div>
+      <div><strong>Cortex Agent = orchestrator.</strong> It doesn't replace Search or Analyst — it routes to the right one based on what each step needs, then combines the results.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider">· · ·</div>
+
+<!-- DIAGRAM 3: Full architecture with agent -->
+<h2>The Full Architecture</h2>
+
+<div class="diagram-wrap">
+<svg width="100%" viewBox="0 0 700 340" role="img">
+  <title>Full Snowflake Cortex architecture with Agent orchestrating Search and Analyst</title>
+  <desc>Layered architecture showing Cortex Agent at the top routing to Cortex Analyst for structured data and Cortex Search for unstructured data, each connected to their respective data stores</desc>
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- User request at top -->
+  <rect x="230" y="20" width="240" height="44" rx="10" fill="#1a1e2e" stroke="none"/>
+  <text x="350" y="39" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="500" fill="#fff">User natural language request</text>
+  <text x="350" y="55" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">via API / Snowflake Intelligence / App</text>
+
+  <!-- Arrow down to Agent -->
+  <line x1="350" y1="64" x2="350" y2="96" stroke="#888" stroke-width="1" marker-end="url(#arr3)"/>
+
+  <!-- Agent box -->
+  <rect x="170" y="98" width="360" height="52" rx="10" fill="#eeedfe" stroke="#4a3aaa" stroke-width="1"/>
+  <text x="350" y="121" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="600" fill="#4a3aaa">Cortex Agent (optional)</text>
+  <text x="350" y="139" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#6a5acc">Plans tasks · Selects tools · Synthesizes results</text>
+
+  <!-- Arrows from Agent to tools -->
+  <line x1="260" y1="150" x2="180" y2="196" stroke="#888" stroke-width="1" marker-end="url(#arr3)"/>
+  <line x1="440" y1="150" x2="520" y2="196" stroke="#888" stroke-width="1" marker-end="url(#arr3)"/>
+
+  <!-- Cortex Analyst box -->
+  <rect x="50" y="198" width="230" height="56" rx="10" fill="#e1f5ee" stroke="#0a6e56" stroke-width="1"/>
+  <text x="165" y="222" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="600" fill="#0a6e56">Cortex Analyst</text>
+  <text x="165" y="240" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#0a6e56">Natural language → SQL → Results</text>
+
+  <!-- Cortex Search box -->
+  <rect x="420" y="198" width="230" height="56" rx="10" fill="#e8f0fb" stroke="#1d5fa8" stroke-width="1"/>
+  <text x="535" y="222" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="600" fill="#1d5fa8">Cortex Search</text>
+  <text x="535" y="240" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#1d5fa8">Query → Embedding → Top-k chunks</text>
+
+  <!-- Arrows to data -->
+  <line x1="165" y1="254" x2="165" y2="292" stroke="#888" stroke-width="1" marker-end="url(#arr3)"/>
+  <line x1="535" y1="254" x2="535" y2="292" stroke="#888" stroke-width="1" marker-end="url(#arr3)"/>
+
+  <!-- Data boxes -->
+  <rect x="50" y="294" width="230" height="36" rx="8" fill="#f7f6f2" stroke="#c8c4ba" stroke-width="0.8"/>
+  <text x="165" y="316" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="500" fill="#555">Structured tables · Semantic model</text>
+
+  <rect x="420" y="294" width="230" height="36" rx="8" fill="#f7f6f2" stroke="#c8c4ba" stroke-width="0.8"/>
+  <text x="535" y="316" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="500" fill="#555">Text columns · Documents · Transcripts</text>
+
+  <!-- Cortex Code — off to the side -->
+  <rect x="590" y="98" width="100" height="52" rx="10" fill="#fdf0d8" stroke="#c07b10" stroke-width="1"/>
+  <text x="640" y="122" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#8a5100">Cortex</text>
+  <text x="640" y="138" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#8a5100">Code</text>
+
+  <!-- Label for Cortex Code -->
+  <text x="640" y="164" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#aaa">Builds all of this</text>
+</svg>
+<p class="diagram-caption">Figure 3 — The full Cortex architecture. Cortex Code builds the infrastructure; Analyst and Search are the intelligence layer; Agent orchestrates them together.</p>
+</div>
+
+<div class="divider">· · ·</div>
+
+<h2>Common Mistakes to Avoid</h2>
+
+<ul class="mistake-list">
+  <li>
+    <div class="x">✗</div>
+    <div><strong>Using Cortex Search for analytics.</strong> "How many tickets were filed last week?" is a count query — it belongs in Cortex Analyst (or plain SQL). Search retrieves similar content, it doesn't aggregate.</div>
+  </li>
+  <li>
+    <div class="x">✗</div>
+    <div><strong>Using Cortex Analyst for document retrieval.</strong> "Find contracts that mention auto-renewal" is a semantic retrieval task. Analyst writes SQL — it can't do fuzzy text matching across free-form document content without a search index.</div>
+  </li>
+  <li>
+    <div class="x">✗</div>
+    <div><strong>Skipping the Semantic Model for Analyst.</strong> Without a semantic model, Cortex Analyst guesses at your schema and business definitions. "Revenue" might mean gross or net. Spend the hour to define it once — you'll get dramatically more accurate results.</div>
+  </li>
+  <li>
+    <div class="x">✗</div>
+    <div><strong>Using Cortex Agent for simple single-step queries.</strong> If you just need to ask a revenue question, call Analyst directly. The Agent orchestration layer adds latency and complexity — only reach for it when you genuinely need multi-step reasoning.</div>
+  </li>
+  <li>
+    <div class="x">✗</div>
+    <div><strong>Treating Cortex Code as a one-shot code generator.</strong> It's most powerful when used iteratively — describe the outcome you want, review the plan, then review the diffs. "Build a churn dashboard" is better than "write me a GROUP BY query."</div>
+  </li>
+</ul>
+
+<div class="divider">· · ·</div>
+
+<h2>Quick Decision Framework</h2>
+
+<div class="callout callout-tldr">
+  <strong>Pick your tool in 3 questions</strong>
+  <ul>
+    <li><strong>Is your data in text fields / documents?</strong> → Cortex Search</li>
+    <li><strong>Is your data in structured tables and you want analytics?</strong> → Cortex Analyst</li>
+    <li><strong>Do you want to build, automate, or scaffold infrastructure?</strong> → Cortex Code</li>
+    <li><strong>Do you need structured + unstructured + reasoning in one flow?</strong> → Cortex Agent (uses Search + Analyst)</li>
+  </ul>
+</div>
+
+<div class="pull-quote">"These are not interchangeable features — they represent different layers of an AI-native architecture inside Snowflake."</div>
+
+<p>The future of data platforms isn't just faster queries — it's building systems where intelligence operates natively across structured and unstructured data, with developers spending less time on boilerplate and more time on logic that matters.</p>
+
+<p>Snowflake Cortex gives you all three layers. Now you know which one to reach for.</p>
+
+<!-- FOOTER -->
+<div class="article-footer">
+  <div class="footer-tags">
+    <span class="footer-tag">Snowflake</span>
+    <span class="footer-tag">Data Engineering</span>
+    <span class="footer-tag">Artificial Intelligence</span>
+    <span class="footer-tag">Machine Learning</span>
+    <span class="footer-tag">Data Architecture</span>
+    <span class="footer-tag">SQL</span>
+    <span class="footer-tag">RAG</span>
+  </div>
+  <div class="clap-bar">
+    <button class="clap-btn" onclick="this.textContent='👏 ' + (parseInt(this.textContent.replace(/\D/g,''))+1)">👏 0</button>
+    <span>If you found this useful, share it with your data team.</span>
+  </div>
+</div>
+
+</body>
+</html>
